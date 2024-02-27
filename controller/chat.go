@@ -160,14 +160,14 @@ loop:
 		if message.Role == "user" {
 			switch contentObj := message.Content.(type) {
 			case string:
-				if common.AllDialogRecordEnable != "1" {
-					content = contentObj
-					break loop
-				} else {
+				if common.AllDialogRecordEnable == "1" || common.AllDialogRecordEnable == "" {
 					messages[i] = model.OpenAIChatMessage{
 						Role:    "user",
 						Content: contentObj,
 					}
+				} else {
+					content = contentObj
+					break loop
 				}
 			case []interface{}:
 				content, err = buildOpenAIGPT4VForImageContent(sendChannelId, contentObj)
@@ -178,13 +178,13 @@ loop:
 					})
 					return
 				}
-				if common.AllDialogRecordEnable != "1" {
-					break loop
-				} else {
+				if common.AllDialogRecordEnable == "1" || common.AllDialogRecordEnable == "" {
 					messages[i] = model.OpenAIChatMessage{
 						Role:    "user",
 						Content: content,
 					}
+				} else {
+					break loop
 				}
 			default:
 				c.JSON(http.StatusOK, model.OpenAIErrorResponse{
@@ -388,7 +388,7 @@ func buildOpenAIGPT4VForImageContent(sendChannelId string, objs []interface{}) (
 		if i == 0 && req.Type == "text" {
 			content += req.Text
 			continue
-		} else if i == 1 && req.Type == "image_url" {
+		} else if i != 0 && req.Type == "image_url" {
 			if common.IsURL(req.ImageURL.URL) {
 				content += fmt.Sprintf("\n%s ", req.ImageURL.URL)
 			} else if common.IsImageBase64(req.ImageURL.URL) {
