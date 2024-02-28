@@ -1,3 +1,7 @@
+<p align="right">
+   <strong>中文</strong> | <a href="./README.en.md">English</a>
+</p>
+
 <div align="center">
 
 # coze-discord-proxy
@@ -44,7 +48,7 @@ _觉得有点意思的话 别忘了点个🌟_
 4. 创建新应用-Bot即`COZE-BOT`,并记录该bot专属的`token`和`id(COZE_BOT_ID)`,此bot为即将被coze托管的bot。
 5. 创建新应用-Bot即`CDP-BOT`,并记录该bot专属的`token(BOT_TOKEN)`,此bot为监听discord消息的bot。
 6. 两个bot开通对应权限(`Administrator`)并邀请进创建好的discord服务器 (过程不在此赘述)。
-7. 打开 [discord官网](https://discord.com/app) 进入服务器,按F12打开开发者工具,在任一频道内发送一次消息,在开发者工具-`Network`中找到请求 `https://discord.com/api/v9/channels/1206*******703/messages` 从该接口header中获取`Authorization(USER_AUTHORIZATION)`并记录。
+7. 打开 [discord官网](https://discord.com/app)进入服务器,按F12打开开发者工具,在任一频道内发送一次消息,在开发者工具-`Network`中找到请求 `https://discord.com/api/v9/channels/1206*******703/messages`从该接口header中获取`Authorization(USER_AUTHORIZATION)`并记录。
 8. 打开 [coze官网](https://www.coze.com) 创建bot并进行个性化配置(注意`Auto-Suggestion`为`default`(默认不用改))。
 9. 配置好后选择发布到discord,填写`COZE-BOT`的`token`,发布完成后在discord服务器中可看到`COZE-BOT`在线并可以@使用。
 10. 使用上述记录的参数开始配置[环境变量](#环境变量)并[部署](#部署)本项目。
@@ -114,8 +118,7 @@ deanxv/coze-discord-proxy
 
 其中`USER_AUTHORIZATION`,`BOT_TOKEN`,`GUILD_ID`,`COZE_BOT_ID`,`PROXY_SECRET`,`CHANNEL_ID`修改为自己的。
 
-如果上面的镜像无法拉取,可以尝试使用 GitHub 的 Docker 镜像,将上面的 `deanxv/coze-discord-proxy`
-替换为 `ghcr.io/deanxv/coze-discord-proxy` 即可。
+如果上面的镜像无法拉取,可以尝试使用 GitHub 的 Docker 镜像,将上面的 `deanxv/coze-discord-proxy`替换为 `ghcr.io/deanxv/coze-discord-proxy` 即可。
 
 ### 部署到第三方平台
 
@@ -174,6 +177,7 @@ Render 可以直接部署 docker 镜像,不需要 fork 仓库：[Render](https:/
 ## 配置
 
 ### 环境变量
+
 1. `USER_AUTHORIZATION:MTA5OTg5N************uIfytxUgJfmaXUBHVI`  主动发送消息的discord用户的授权密钥(多个请以,分隔)
 2. `BOT_TOKEN:MTE5OTk2xxxxxxxxxxxxxxrwUrUWNbG63w`  监听消息的Bot-Token
 3. `GUILD_ID:119xxxxxxxx796`  所有Bot所在的服务器ID
@@ -222,10 +226,10 @@ Render 可以直接部署 docker 镜像,不需要 fork 仓库：[Render](https:/
 
 3. 重启服务
 
-> 当有此json配置时,会通过请求头携带的[请求密钥]+请求体中的[`model`]联合匹配此配置中的`cozeBotId`若匹配到多个则随机选择一个。配置很灵活,可以根据自己的需求进行配置。
+> 当有此json配置时,会通过请求头携带的[请求密钥]+请求体中的[`model`]联合匹配此配置中的`cozeBotId`
+> 若匹配到多个则随机选择一个。配置很灵活,可以根据自己的需求进行配置。
 
-第三方平台(如: `zeabur`)部署的服务需要[配置多机器人]
-请参考[issue#30](https://github.com/deanxv/coze-discord-proxy/issues/30)
+第三方平台(如: `zeabur`)部署的服务需要[配置多机器人]请参考[issue#30](https://github.com/deanxv/coze-discord-proxy/issues/30)
 
 ## Q&A
 
