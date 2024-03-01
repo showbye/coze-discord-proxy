@@ -6,7 +6,7 @@
 
 # coze-discord-proxy
 
-_代理`Discord`对话`Coze-Bot`,实现API形式请求GPT4对话模型/微调模型_
+_代理`Discord`对话`Coze-Bot`，实现以API形式请求GPT4模型，提供对话、文生图、图生文、知识库检索等功能_
 
 _觉得有点意思的话 别忘了点个🌟_
 
@@ -91,27 +91,27 @@ services:
     volumes:
       - ./data:/app/coze-discord-proxy/data
     environment:
-      - USER_AUTHORIZATION=MTA5OTg5N************uIfytxUgJfmaXUBHVI  # 必须修改为我们discord用户的授权密钥(多个请以,分隔)
-      - BOT_TOKEN=MTE5OTk2xxxxxxxxxxxxxxrwUrUWNbG63w  # 必须修改为监听消息的Bot-Token
-      - GUILD_ID=119xxxxxxxx796  # 必须修改为两个机器人所在的服务器ID
-      - COZE_BOT_ID=119xxxxxxxx7  # 必须修改为由coze托管的机器人ID
-      - CHANNEL_ID=119xxxxxx24  # 默认频道-(目前版本下该参数仅用来活跃机器人)
+      - USER_AUTHORIZATION=MTA5OTg5N************aXUBHVI  # 必须修改为我们discord用户的授权密钥(多个请以,分隔)
+      - BOT_TOKEN=MTE5OT************UrUWNbG63w  # 必须修改为监听消息的Bot-Token
+      - GUILD_ID=11************96  # 必须修改为两个机器人所在的服务器ID
+      - COZE_BOT_ID=11************97  # 必须修改为由coze托管的机器人ID
+      - CHANNEL_ID=11************94  # 默认频道-(目前版本下该参数仅用来活跃机器人)
       - PROXY_SECRET=123456  # [可选]接口密钥-修改此行为请求头校验的值(多个请以,分隔)
       - TZ=Asia/Shanghai
 ```
 
 ### 基于 Docker 进行部署
 
-```shell
+```docker
 docker run --name coze-discord-proxy -d --restart always \
 -p 7077:7077 \
 -v $(pwd)/data:/app/coze-discord-proxy/data \
 -e USER_AUTHORIZATION="MTA5OTg5N************uIfytxUgJfmaXUBHVI" \
--e BOT_TOKEN="MTE5OTk2xxxxxxxxxxxxxxrwUrUWNbG63w" \
--e GUILD_ID="119xxxxxxxx796" \
--e COZE_BOT_ID="119xxxxxxxx7" \
+-e BOT_TOKEN="MTE5OTk2************rUWNbG63w" \
+-e GUILD_ID="11************96" \
+-e COZE_BOT_ID="11************97" \
 -e PROXY_SECRET="123456" \
--e CHANNEL_ID="119xxxxxx24" \
+-e CHANNEL_ID="11************24" \
 -e TZ=Asia/Shanghai \
 deanxv/coze-discord-proxy
 ```
@@ -144,13 +144,13 @@ deanxv/coze-discord-proxy
 
    `USER_AUTHORIZATION:MTA5OTg5N************uIfytxUgJfmaXUBHVI`  主动发送消息的discord用户的授权密钥(多个请以,分隔)
 
-   `BOT_TOKEN:MTE5OTk2xxxxxxxxxxxxxxrwUrUWNbG63w`  监听消息的Bot-Token
+   `BOT_TOKEN:MTE5OTk************WNbG63w`  监听消息的Bot-Token
 
-   `GUILD_ID:119xxxxxxxx796`  两个机器人所在的服务器ID
+   `GUILD_ID:11************96`  两个机器人所在的服务器ID
 
-   `COZE_BOT_ID:119xxxxxxxx7` 由coze托管的机器人ID
+   `COZE_BOT_ID:11************97` 由coze托管的机器人ID
 
-   `CHANNEL_ID:119xxxxxx24`  # 默认频道-(目前版本下该参数仅用来活跃机器人)
+   `CHANNEL_ID:11************24`  # 默认频道-(目前版本下该参数仅用来活跃机器人)
 
    `PROXY_SECRET:123456` [可选]接口密钥-修改此行为请求头校验的值(多个请以,分隔)(与openai-API-KEY用法一致)
 
@@ -179,10 +179,10 @@ Render 可以直接部署 docker 镜像,不需要 fork 仓库：[Render](https:/
 ### 环境变量
 
 1. `USER_AUTHORIZATION:MTA5OTg5N************uIfytxUgJfmaXUBHVI`  主动发送消息的discord用户的授权密钥(多个请以,分隔)
-2. `BOT_TOKEN:MTE5OTk2xxxxxxxxxxxxxxrwUrUWNbG63w`  监听消息的Bot-Token
-3. `GUILD_ID:119xxxxxxxx796`  所有Bot所在的服务器ID
-4. `COZE_BOT_ID:119xxxxxxxx7`  由coze托管的Bot-ID
-5. `CHANNEL_ID:119xxxxxx24`  默认频道-(目前版本下该参数仅用来活跃Bot)
+2. `BOT_TOKEN:MTE5OTk2************rUWNbG63w`  监听消息的Bot-Token
+3. `GUILD_ID:11************96`  所有Bot所在的服务器ID
+4. `COZE_BOT_ID:11************97`  由coze托管的Bot-ID
+5. `CHANNEL_ID:11************24`  默认频道-(目前版本下该参数仅用来活跃Bot)
 6. `PROXY_SECRET:123456`  [可选]接口密钥-修改此行为请求头校验的值(多个请以,分隔)(与openai-API-KEY用法一致),**推荐使用此环境变量**
 7. `DEFAULT_CHANNEL_ENABLE:0`  [可选]是否启用默认频道[0:否;1:是] (默认为0) 启用后每次对话都会在默认频道中,**会话隔离会失效**,**推荐不使用此环境变量**
 8. `ALL_DIALOG_RECORD_ENABLE:1`  [可选]是否启用全量上下文[0:否;1:是] (默认为1) 关闭后每次对话只会发送`messages`中最后一个`role`为`user`的`content`,**推荐不使用此环境变量**
@@ -231,6 +231,17 @@ Render 可以直接部署 docker 镜像,不需要 fork 仓库：[Render](https:/
 
 第三方平台(如: `zeabur`)部署的服务需要[配置多机器人]请参考[issue#30](https://github.com/deanxv/coze-discord-proxy/issues/30)
 
+## 限制
+
+目前的coze对每个discord用户做了标识,在discord中每个用户对不同的模型的调用有次数限制,具体如下:
+
+```
+GPT-4 Turbo (128k) - 50次/天
+GPT-4 (8k) - 100次/天
+GPT-3.5 (16k) - 500次/天
+```
+可配置多discord用户`Authorization`(参考环境变量`USER_AUTHORIZATION`)实现叠加请求次数及请求负载均衡。
+
 ## Q&A
 
 Q: 并发量高时应如何配置？
@@ -245,7 +256,7 @@ A: 首先为服务[配置多机器人](#配置多机器人)用来作响应bot的
 
 **开源不易,若你参考此项目或基于此项目二开可否麻烦在你的项目文档中标识此项目呢？谢谢你！♥♥♥**
 
-Java: https://github.com/oddfar/coze-discord
+Java: https://github.com/oddfar/coze-discord (目前不可用)
 
 ## 其他引用
 

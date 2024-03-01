@@ -83,8 +83,11 @@ func StartBot(ctx context.Context, token string) {
 	checkEnvVariable()
 	common.SysLog("Bot is now running. Enjoy It.")
 
+	// 每日9点 重新加载userAuth
+	go loadUserAuthTask()
+
 	if CozeBotStayActiveEnable == "1" || CozeBotStayActiveEnable == "" {
-		go scheduleDailyMessage()
+		go stayActiveMessageTask()
 	}
 
 	go func() {
@@ -98,6 +101,28 @@ func StartBot(ctx context.Context, token string) {
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-sc
+}
+
+func loadUserAuthTask() {
+	for {
+		source := rand.NewSource(time.Now().UnixNano())
+		randomNumber := rand.New(source).Intn(60) // 生成0到60之间的随机整数
+
+		// 计算距离下一个时间间隔
+		now := time.Now()
+		next := now.Add(time.Hour * 24)
+		next = time.Date(next.Year(), next.Month(), next.Day(), 9, 0, 0, 0, next.Location())
+		delay := next.Sub(now)
+
+		// 等待直到下一个间隔
+		time.Sleep(delay + time.Duration(randomNumber)*time.Second)
+
+		common.SysLog("CDP Scheduled loadUserAuth Task Job Start!")
+		UserAuthorizations = strings.Split(UserAuthorization, ",")
+		common.LogInfo(context.Background(), fmt.Sprintf("UserAuths: %+v", UserAuthorizations))
+		common.SysLog("CDP Scheduled loadUserAuth Task Job  End!")
+
+	}
 }
 
 func checkEnvVariable() {
@@ -329,7 +354,7 @@ func messageUpdate(s *discordgo.Session, m *discordgo.MessageUpdate) {
 	return
 }
 
-func SendMessage(c *gin.Context, channelID, cozeBotId, message string) (*discordgo.Message, error) {
+func SendMessage(c *gin.Context, channelID, cozeBotId, message string) (*discordgo.Message, string, error) {
 	var ctx context.Context
 	if c == nil {
 		ctx = context.Background()
@@ -339,7 +364,7 @@ func SendMessage(c *gin.Context, channelID, cozeBotId, message string) (*discord
 
 	if Session == nil {
 		common.LogError(ctx, "discord session is nil")
-		return nil, fmt.Errorf("discord session not initialized")
+		return nil, "", fmt.Errorf("discord session not initialized")
 	}
 
 	//var sentMsg *discordgo.Message
@@ -352,18 +377,18 @@ func SendMessage(c *gin.Context, channelID, cozeBotId, message string) (*discord
 
 	if runeCount := len([]rune(content)); runeCount > 50000 {
 		common.LogError(ctx, fmt.Sprintf("prompt已超过限制,请分段发送 [%v] %s", runeCount, content))
-		return nil, fmt.Errorf("prompt已超过限制,请分段发送 [%v]", runeCount)
+		return nil, "", fmt.Errorf("prompt已超过限制,请分段发送 [%v]", runeCount)
 	}
 
 	if len(UserAuthorizations) == 0 {
 		SetChannelDeleteTimer(channelID, 5*time.Second)
 		common.LogError(c.Request.Context(), fmt.Sprintf("无可用的 user_auth"))
-		return nil, fmt.Errorf("no_available_user_auth")
+		return nil, "", fmt.Errorf("no_available_user_auth")
 	}
 
 	userAuth, err := common.RandomElement(UserAuthorizations)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	for i, sendContent := range common.ReverseSegment(content, 1888) {
@@ -380,7 +405,7 @@ func SendMessage(c *gin.Context, channelID, cozeBotId, message string) (*discord
 				return SendMessage(c, channelID, cozeBotId, message)
 			}
 			common.LogError(ctx, fmt.Sprintf("error sending message: %s", err))
-			return nil, fmt.Errorf("error sending message")
+			return nil, "", fmt.Errorf("error sending message")
 		}
 
 		//time.Sleep(1 * time.Second)
@@ -388,10 +413,10 @@ func SendMessage(c *gin.Context, channelID, cozeBotId, message string) (*discord
 		if i == len(common.ReverseSegment(content, 1888))-1 {
 			return &discordgo.Message{
 				ID: sentMsgId,
-			}, nil
+			}, userAuth, nil
 		}
 	}
-	return &discordgo.Message{}, fmt.Errorf("error sending message")
+	return &discordgo.Message{}, "", fmt.Errorf("error sending message")
 }
 
 func ChannelCreate(guildID, channelName string, channelType int) (string, error) {
@@ -477,7 +502,7 @@ func NewProxyClient(proxyUrl string) (proxyParse *url.URL, client *http.Client, 
 
 }
 
-func scheduleDailyMessage() {
+func stayActiveMessageTask() {
 	for {
 		source := rand.NewSource(time.Now().UnixNano())
 		randomNumber := rand.New(source).Intn(60) // 生成0到10之间的随机整数
@@ -516,7 +541,7 @@ func scheduleDailyMessage() {
 				common.SysError(fmt.Sprintf("ChannelId{%s} BotId{%s} 活跃机器人任务消息发送异常!雪花Id生成失败!", sendChannelId, config.CozeBotId))
 				continue
 			}
-			_, err = SendMessage(nil, sendChannelId, config.CozeBotId, fmt.Sprintf("【%v】 %s", nextID, "CDP Scheduled Task Job Send Msg Success!"))
+			_, _, err = SendMessage(nil, sendChannelId, config.CozeBotId, fmt.Sprintf("【%v】 %s", nextID, "CDP Scheduled Task Job Send Msg Success!"))
 			if err != nil {
 				common.SysError(fmt.Sprintf("ChannelId{%s} BotId{%s} 活跃机器人任务消息发送异常!", sendChannelId, config.CozeBotId))
 			} else {
