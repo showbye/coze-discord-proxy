@@ -35,6 +35,7 @@ type OpenAIChatCompletionResponse struct {
 	Choices           []OpenAIChoice `json:"choices"`
 	Usage             OpenAIUsage    `json:"usage"`
 	SystemFingerprint *string        `json:"system_fingerprint"`
+	Suggestions       []string       `json:"suggestions"`
 }
 
 type OpenAIChoice struct {
@@ -68,14 +69,16 @@ type OpenAIImagesGenerationRequest struct {
 }
 
 type OpenAIImagesGenerationResponse struct {
-	Created    int64                                 `json:"created"`
-	DailyLimit bool                                  `json:"dailyLimit"`
-	Data       []*OpenAIImagesGenerationDataResponse `json:"data"`
+	Created     int64                                 `json:"created"`
+	DailyLimit  bool                                  `json:"dailyLimit"`
+	Data        []*OpenAIImagesGenerationDataResponse `json:"data"`
+	Suggestions []string                              `json:"suggestions"`
 }
 
 type OpenAIImagesGenerationDataResponse struct {
-	URL     string `json:"url"`
-	B64Json string `json:"b64_json"`
+	URL           string `json:"url"`
+	RevisedPrompt string `json:"revised_prompt"`
+	B64Json       string `json:"b64_json"`
 }
 
 type OpenAIGPT4VImagesReq struct {
@@ -84,6 +87,20 @@ type OpenAIGPT4VImagesReq struct {
 	ImageURL struct {
 		URL string `json:"url"`
 	} `json:"image_url"`
+}
+
+// Model represents a model with its properties.
+type OpenaiModelResponse struct {
+	ID     string `json:"id"`
+	Object string `json:"object"`
+	//Created time.Time `json:"created"`
+	//OwnedBy string    `json:"owned_by"`
+}
+
+// ModelList represents a list of models.
+type OpenaiModelListResponse struct {
+	Object string                `json:"object"`
+	Data   []OpenaiModelResponse `json:"data"`
 }
 
 //type ChannelIdentifier interface {

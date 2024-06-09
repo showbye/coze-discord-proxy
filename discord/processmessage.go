@@ -45,7 +45,7 @@ func processMessageUpdateForOpenAI(m *discordgo.MessageUpdate) model.OpenAIChatC
 		ID:      m.ID,
 		Object:  "chat.completion",
 		Created: time.Now().Unix(),
-		Model:   "gpt-4-turbo",
+		Model:   "Coze-Model",
 		Choices: []model.OpenAIChoice{
 			{
 				Index: 0,
@@ -75,22 +75,30 @@ func processMessageUpdateForOpenAIImage(m *discordgo.MessageUpdate) model.OpenAI
 	}
 
 	re := regexp.MustCompile(`]\((https?://\S+)\)`)
-	submatches := re.FindAllStringSubmatch(m.Content, -1)
+	subMatches := re.FindAllStringSubmatch(m.Content, -1)
 
-	for _, match := range submatches {
+	if len(subMatches) == 0 && len(m.Embeds) == 0 {
 		response.Data = append(response.Data, &model.OpenAIImagesGenerationDataResponse{
-			URL: match[1],
+			RevisedPrompt: m.Content,
+		})
+	}
+
+	for _, match := range subMatches {
+		response.Data = append(response.Data, &model.OpenAIImagesGenerationDataResponse{
+			URL:           match[1],
+			RevisedPrompt: m.Content,
 		})
 	}
 
 	if len(m.Embeds) != 0 {
 		for _, embed := range m.Embeds {
 			if embed.Image != nil && !strings.Contains(m.Content, embed.Image.URL) {
-				if m.Content != "" {
-					m.Content += "\n"
-				}
+				//	if m.Content != "" {
+				//		m.Content += "\n"
+				//	}
 				response.Data = append(response.Data, &model.OpenAIImagesGenerationDataResponse{
-					URL: embed.Image.URL,
+					URL:           embed.Image.URL,
+					RevisedPrompt: m.Content,
 				})
 			}
 		}
@@ -137,7 +145,7 @@ func processMessageCreateForOpenAI(m *discordgo.MessageCreate) model.OpenAIChatC
 		ID:      m.ID,
 		Object:  "chat.completion",
 		Created: time.Now().Unix(),
-		Model:   "gpt-4-turbo",
+		Model:   "Coze-Model",
 		Choices: []model.OpenAIChoice{
 			{
 				Index: 0,
@@ -167,22 +175,30 @@ func processMessageCreateForOpenAIImage(m *discordgo.MessageCreate) model.OpenAI
 	}
 
 	re := regexp.MustCompile(`]\((https?://\S+)\)`)
-	submatches := re.FindAllStringSubmatch(m.Content, -1)
+	subMatches := re.FindAllStringSubmatch(m.Content, -1)
 
-	for _, match := range submatches {
+	if len(subMatches) == 0 && len(m.Embeds) == 0 {
 		response.Data = append(response.Data, &model.OpenAIImagesGenerationDataResponse{
-			URL: match[1],
+			RevisedPrompt: m.Content,
+		})
+	}
+
+	for i, match := range subMatches {
+		response.Data = append(response.Data, &model.OpenAIImagesGenerationDataResponse{
+			URL:           match[i],
+			RevisedPrompt: m.Content,
 		})
 	}
 
 	if len(m.Embeds) != 0 {
 		for _, embed := range m.Embeds {
 			if embed.Image != nil && !strings.Contains(m.Content, embed.Image.URL) {
-				if m.Content != "" {
-					m.Content += "\n"
-				}
+				//if m.Content != "" {
+				//	m.Content += "\n"
+				//}
 				response.Data = append(response.Data, &model.OpenAIImagesGenerationDataResponse{
-					URL: embed.Image.URL,
+					URL:           embed.Image.URL,
+					RevisedPrompt: m.Content,
 				})
 			}
 		}

@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/samber/lo"
 	"io"
 	"net/http"
 	"strconv"
@@ -378,10 +379,54 @@ loop:
 	}
 }
 
+// OpenaiModels 模型列表-openai
+// @Summary 模型列表-openai
+// @Description 模型列表-openai
+// @Tags openai
+// @Accept json
+// @Produce json
+// @Param Authorization header string false "Authorization"
+// @Success 200 {object} model.OpenaiModelListResponse "Successful response"
+// @Router /v1/models [get]
+func OpenaiModels(c *gin.Context) {
+	var modelsResp []string
+
+	secret := ""
+	if len(discord.BotConfigList) != 0 {
+		if secret = c.Request.Header.Get("Authorization"); secret != "" {
+			secret = strings.Replace(secret, "Bearer ", "", 1)
+		}
+
+		botConfigs := discord.FilterConfigs(discord.BotConfigList, secret, "", nil)
+		for _, botConfig := range botConfigs {
+			modelsResp = append(modelsResp, botConfig.Model...)
+		}
+
+		modelsResp = lo.Uniq(modelsResp)
+	} else {
+		modelsResp = common.DefaultOpenaiModelList
+	}
+
+	var openaiModelListResponse model.OpenaiModelListResponse
+	var openaiModelResponse []model.OpenaiModelResponse
+	openaiModelListResponse.Object = "list"
+
+	for _, modelResp := range modelsResp {
+		openaiModelResponse = append(openaiModelResponse, model.OpenaiModelResponse{
+			ID:     modelResp,
+			Object: "model",
+		})
+	}
+	openaiModelListResponse.Data = openaiModelResponse
+	c.JSON(http.StatusOK, openaiModelListResponse)
+	return
+}
+
 func buildOpenAIGPT4VForImageContent(sendChannelId string, objs []interface{}) (string, error) {
 	var content string
+	var url string
 
-	for i, obj := range objs {
+	for _, obj := range objs {
 
 		jsonData, err := json.Marshal(obj)
 		if err != nil {
@@ -394,18 +439,17 @@ func buildOpenAIGPT4VForImageContent(sendChannelId string, objs []interface{}) (
 			return "", err
 		}
 
-		if i == 0 && req.Type == "text" {
-			content += req.Text
-			continue
-		} else if i != 0 && req.Type == "image_url" {
+		if req.Type == "text" {
+			content = req.Text
+		} else if req.Type == "image_url" {
 			if common.IsURL(req.ImageURL.URL) {
-				content += fmt.Sprintf("\n%s ", req.ImageURL.URL)
+				url = fmt.Sprintf("%s ", req.ImageURL.URL)
 			} else if common.IsImageBase64(req.ImageURL.URL) {
-				url, err := discord.UploadToDiscordAndGetURL(sendChannelId, req.ImageURL.URL)
+				imgUrl, err := discord.UploadToDiscordAndGetURL(sendChannelId, req.ImageURL.URL)
 				if err != nil {
 					return "", fmt.Errorf("文件上传异常")
 				}
-				content += fmt.Sprintf("\n%s ", url)
+				url = fmt.Sprintf("\n%s ", imgUrl)
 			} else {
 				return "", fmt.Errorf("文件格式有误")
 			}
@@ -414,7 +458,7 @@ func buildOpenAIGPT4VForImageContent(sendChannelId string, objs []interface{}) (
 		}
 	}
 
-	return content, nil
+	return fmt.Sprintf("%s\n%s", content, url), nil
 
 }
 
@@ -441,14 +485,6 @@ func ImagesForOpenAI(c *gin.Context) {
 				Type:    "request_error",
 				Code:    "500",
 			},
-		})
-		return
-	}
-
-	if runeCount := len([]rune(request.Prompt)); runeCount > 2000 {
-		c.JSON(http.StatusOK, gin.H{
-			"success": false,
-			"message": fmt.Sprintf("prompt最大为2000字符 [%v]", runeCount),
 		})
 		return
 	}
@@ -494,7 +530,7 @@ func ImagesForOpenAI(c *gin.Context) {
 		}()
 	}
 
-	sentMsg, userAuth, err := discord.SendMessage(c, sendChannelId, calledCozeBotId, request.Prompt)
+	sentMsg, userAuth, err := discord.SendMessage(c, sendChannelId, calledCozeBotId, common.ImgGeneratePrompt+request.Prompt)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, model.OpenAIErrorResponse{
 			OpenAIError: model.OpenAIError{
@@ -541,18 +577,20 @@ func ImagesForOpenAI(c *gin.Context) {
 			}
 			if request.ResponseFormat == "b64_json" && reply.Data != nil && len(reply.Data) > 0 {
 				for _, data := range reply.Data {
-					base64Str, err := getBase64ByUrl(data.URL)
-					if err != nil {
-						c.JSON(http.StatusInternalServerError, model.OpenAIErrorResponse{
-							OpenAIError: model.OpenAIError{
-								Message: err.Error(),
-								Type:    "request_error",
-								Code:    "500",
-							},
-						})
-						return
+					if data.URL != "" {
+						base64Str, err := getBase64ByUrl(data.URL)
+						if err != nil {
+							c.JSON(http.StatusInternalServerError, model.OpenAIErrorResponse{
+								OpenAIError: model.OpenAIError{
+									Message: err.Error(),
+									Type:    "request_error",
+									Code:    "500",
+								},
+							})
+							return
+						}
+						data.B64Json = "data:image/webp;base64," + base64Str
 					}
-					data.B64Json = "data:image/webp;base64," + base64Str
 				}
 			}
 			replyResp = reply
@@ -697,11 +735,12 @@ func checkUserAuths(c *gin.Context) error {
 	if len(discord.UserAuthorizations) == 0 {
 		common.LogError(c, fmt.Sprintf("无可用的 user_auth"))
 		// tg发送通知
-		if telegram.NotifyTelegramBotToken != "" && telegram.TgBot != nil {
+		if !common.IsSameDay(discord.NoAvailableUserAuthPreNotifyTime, time.Now()) && telegram.NotifyTelegramBotToken != "" && telegram.TgBot != nil {
 			go func() {
 				discord.NoAvailableUserAuthChan <- "stop"
 			}()
 		}
+
 		return fmt.Errorf("no_available_user_auth")
 	}
 	return nil
